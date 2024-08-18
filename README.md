@@ -1,3 +1,7 @@
+<<<<<<< HEAD
+=======
+
+>>>>>>> 526cff8 (initial commit)
 # RGXCONNECT
 
 rgxconnect is an application which connects newly registered jack clients ports
