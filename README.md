@@ -1,6 +1,6 @@
 # RGXCONNECT
 
-rgxconnect is an application which connects newly registered jack clients ports
+rgxconnect is an application which connects newly registered jack clients' ports
 according to regex rules.
 
 ## Usage
@@ -14,7 +14,7 @@ One rule in each line.
 <new_registered_port> <existing_port>
 ```
 ## Examples
-Firefox uses its PID int port name.
+Firefox uses its PID in port name.
 ```
 <Firefox:AudioStream.*out_0> <zita-j2n:in_1>                                                              
 <Firefox:AudioStream.*out_1> <zita-j2n:in_2>
