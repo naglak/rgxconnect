@@ -2,7 +2,7 @@ GCC := g++
 OUTPUT := rgxconnect 
 SOURCES := rgxconnect.cpp jconnector.cpp
 HEADERS := jconnector.h
-CCFLAGS := -ljack -pthread
+CCFLAGS := -ljack
 
 all: $(OUTPUT)
 	

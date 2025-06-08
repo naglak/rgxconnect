@@ -19,10 +19,12 @@
 #ifndef JCONNECTOR_H
 #define JCONNECTOR_H
 
+#include <condition_variable>
 #include <jack/jack.h>
 #include <jack/types.h>
-#include <pthread.h>
+#include <mutex>
 #include <string>
+#include <thread>
 #include <vector>
 
 using namespace std;
@@ -33,13 +35,13 @@ private:
   vector<string> key2;
   jack_client_t *client;
   jack_port_id_t jack_port;
-  pthread_t thread_id;
-  pthread_mutex_t thread_mutex;
-  pthread_mutex_t callback_mutex;
-  pthread_cond_t thread_cv;
-  pthread_cond_t callback_cv;
   bool callback_guard = false;
   bool thread_guard = false;
+  std::mutex thread_mutex;
+  std::mutex callback_mutex;
+  std::condition_variable thread_cv;
+  std::condition_variable callback_cv;
+  std::thread thread;
 
 public:
   JackConnector(const char *clientname, const char *servername);

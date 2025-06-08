@@ -45,16 +45,8 @@ void JackConnector::add_rule(string s1, string s2) {
 }
 
 void JackConnector::launch() {
-  pthread_mutex_init(&thread_mutex, 0);
-  pthread_mutex_init(&callback_mutex, 0);
-  pthread_cond_init(&thread_cv, 0);
-  pthread_cond_init(&callback_cv, 0);
-  pthread_create(&thread_id, 0, &JackConnector::run_thread, (void *)this);
-  pthread_join(thread_id, 0);
-  pthread_mutex_destroy(&callback_mutex);
-  pthread_mutex_destroy(&thread_mutex);
-  pthread_cond_destroy(&callback_cv);
-  pthread_cond_destroy(&thread_cv);
+  thread = std::thread(&JackConnector::run_thread, this);
+  thread.join();
 }
 
 void JackConnector::jack_reg_callback(jack_port_id_t port, int registered,
@@ -72,37 +64,27 @@ void *JackConnector::run_thread(void *arg) {
   jack_port_id_t port;
 
   while (1) {
-    pthread_mutex_lock(&this_->thread_mutex);
-    while (!this_->thread_guard) {
-      pthread_cond_wait(&this_->thread_cv, &this_->thread_mutex);
-    }
+    std::unique_lock<std::mutex> thread_lock(this_->thread_mutex);
+    this_->thread_cv.wait(thread_lock, [this_] { return this_->thread_guard; });
     this_->thread_guard = false;
     port = this_->jack_port;
-    pthread_mutex_unlock(&this_->thread_mutex);
     this_->connect(port);
-    // release jack callback
-    pthread_mutex_lock(&this_->callback_mutex);
     this_->callback_guard = true;
-    pthread_mutex_unlock(&this_->callback_mutex);
-    pthread_cond_signal(&this_->callback_cv);
+    this_->callback_cv.notify_one();
   }
   return this_;
 }
 
 void JackConnector::jack_reg_callback_prv(jack_port_id_t port, void *arg) {
-  pthread_mutex_lock(&thread_mutex);
-  jack_port = port;
-  thread_guard = true;
-  pthread_mutex_unlock(&thread_mutex);
-  // connect command
-  pthread_cond_signal(&thread_cv);
-  // wait for connection finished
-  pthread_mutex_lock(&callback_mutex);
-  while (!callback_guard) {
-    pthread_cond_wait(&callback_cv, &callback_mutex);
+  {
+    std::unique_lock<std::mutex> thread_lock(thread_mutex);
+    jack_port = port;
+    thread_guard = true;
   }
+  thread_cv.notify_one();
+  std::unique_lock<std::mutex> callback_lock(callback_mutex);
+  callback_cv.wait(callback_lock, [this] { return callback_guard; });
   callback_guard = false;
-  pthread_mutex_unlock(&callback_mutex);
 }
 
 void JackConnector::connect(jack_port_id_t port) {
